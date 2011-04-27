@@ -1,0 +1,10 @@
+ClutterScope
+============
+
+Dependencies
+------------
+
+- Clutter <http://www.clutter-project.org/>
+- Python <http://www.python.org/>
+- Numpy <http://numpy.scipy.org/>
+- PyClutter <http://wiki.clutter-project.org/wiki/PyClutter>

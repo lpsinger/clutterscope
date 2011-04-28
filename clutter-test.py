@@ -146,6 +146,12 @@ class Trace(clutter.Actor):
 		if prop.name == 'color':
 			return self.color
 
+	def set_color(self, color):
+		self.set_property('color', color)
+
+	def get_color(self):
+		return self.get_property(color)
+
 	def do_paint(self):
 		x = numpy.arange(-400, 400)
 		y = 20 * numpy.sin(x * 0.1)
@@ -173,8 +179,17 @@ gr = Graticule()
 stage.add(gr)
 
 tr = Trace()
+tr.set_position(0, -50)
 gr.add(tr)
-tr.set_position(0, 0)
+
+tr = Trace()
+tr.set_color(clutter.color_from_string('magenta'))
+gr.add(tr)
+
+tr = Trace()
+tr.set_color(clutter.color_from_string('yellow'))
+tr.set_position(0, 50)
+gr.add(tr)
 
 stage.show_all()
 clutter.main()

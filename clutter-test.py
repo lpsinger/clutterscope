@@ -24,7 +24,7 @@ def vline(x, y1, y2):
 	cogl.path_line(x, y1, x, y2)
 
 
-class Graticule(clutter.Actor):
+class Graticule(clutter.Group):
 	"""Actor that provides grid and axes for a ClutterScope.
 	This actor paints into an area that extends from half its width above its
 	top to half its width above its bottom, so that it is possible to conveniently
@@ -117,15 +117,33 @@ class Graticule(clutter.Actor):
 class Trace(clutter.Actor):
 	__gtype_name__ = 'Trace'
 
+	__gproperties__ = {
+		'color': (
+			clutter.Color,
+			'color',
+			'Trace stroke color',
+			gobject.PARAM_READWRITE
+		)
+	}
+
 	def __init__(self):
 		super(Trace, self).__init__()
-		#self.set_anchor_point(0.5 * self.get_width(), 0.5 * self.get_height())
 		self.set_anchor_point_from_gravity(clutter.GRAVITY_CENTER)
-		#self.set_property('scale-gravity', 'center')
 		self.color = clutter.color_from_string('cyan')
 
+	def do_set_property(self, prop, val):
+		if prop.name == 'color':
+			old_color = self.color
+			self.color = val
+			if old_color != self.color:
+				self.queue_redraw()
+
+	def do_get_property(self, prop):
+		if prop.name == 'color':
+			return self.color
+
 	def do_paint(self):
-		x = numpy.arange(800)
+		x = numpy.arange(-400, 400)
 		y = 20 * numpy.sin(x * 0.1)
 
 		# Plot trace, setting down lines wherever both x and y are finite
@@ -149,6 +167,10 @@ stage.set_user_resizable(True)
 
 gr = Graticule()
 stage.add(gr)
+
+tr = Trace()
+gr.add(tr)
+tr.set_position(0, 0)
 
 stage.show_all()
 clutter.main()

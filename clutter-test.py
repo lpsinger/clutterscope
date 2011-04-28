@@ -86,6 +86,9 @@ class Graticule(clutter.Group):
 		cogl.set_source_color(self.GRIDLINE_COLOR)
 		cogl.path_stroke()
 
+		# Chain up to parent.
+		clutter.Group.do_paint(self)
+
 	def parent_allocation_changed(self, parent, box, flags):
 		"""parent's allocation-changed signal handler."""
 		parent_width = box.get_width()
@@ -128,6 +131,7 @@ class Trace(clutter.Actor):
 
 	def __init__(self):
 		super(Trace, self).__init__()
+		self.set_size(0, 0)
 		self.set_anchor_point_from_gravity(clutter.GRAVITY_CENTER)
 		self.color = clutter.color_from_string('cyan')
 

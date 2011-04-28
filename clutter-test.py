@@ -44,10 +44,11 @@ class Graticule(clutter.Actor):
 	def __init__(self):
 		super(Graticule, self).__init__()
 		self.__bind_constraint = None
-		self.__align_x_constraint = None
+		# FIXME: replace allocation-changed handler with align constraints
+		self.__allocation_changed_handler = None
 
 	def do_paint(self):
-		"""Actor->paint signal handler."""
+		"""paint signal handler."""
 		w = self.get_width()
 		h = self.get_height()
 		half_w = 0.5 * w
@@ -85,8 +86,14 @@ class Graticule(clutter.Actor):
 		cogl.set_source_color(self.GRIDLINE_COLOR)
 		cogl.path_stroke()
 
+	def parent_allocation_changed(self, parent, box, flags):
+		"""parent's allocation-changed signal handler."""
+		parent_width = box.get_width()
+		parent_height = box.get_height()
+		self.set_position(0.5 * parent_width, 0.5 * parent_height)
+
 	def do_parent_set(self, old_parent):
-		"""Actor->parent_set signal handler."""
+		"""parent-set signal handler."""
 		parent = self.get_parent()
 		if self.__bind_constraint:
 			self.remove_constraint(self.__bind_constraint)
@@ -95,13 +102,16 @@ class Graticule(clutter.Actor):
 			self.add_constraint(self.__bind_constraint)
 		else:
 			self.__bind_constraint = None
-		if self.__align_x_constraint:
-			self.remove_constraint(self.__align_x_constraint)
+		if self.__allocation_changed_handler:
+			if old_parent and self.__allocation_changed_handler:
+				old_parent.disconnect(self.__allocation_changed_handler)
 		if parent:
-			self.__align_x_constraint = clutter.AlignConstraint(parent, clutter.ALIGN_X_AXIS, 0.)
-			self.add_constraint(self.__align_x_constraint)
+			self.__allocation_changed_handler = parent.connect_after('allocation-changed', self.parent_allocation_changed)
 		else:
-			self.__align_x_constraint = None
+			self.__allocation_changed_handler = None
+		if parent:
+			self.set_position(0.5 * parent.get_width(), 0.5 * parent.get_height())
+
 
 
 class Trace(clutter.Actor):
@@ -134,21 +144,11 @@ class Trace(clutter.Actor):
 		cogl.path_stroke()
 
 stage.set_size(576, 576)
-
-gr = Graticule()
-
-#tr = Trace()
-#tr.set_size(*stage.get_size())
-#tr.set_position(0, 576/2)
-stage.add(gr)
-gr.set_size(*stage.get_size())
-gr.set_position(576/2, 576/2)
-#stage.add(tr)
-#tr.set_reactive(True)
-#gr.add_constraint(clutter.BindConstraint(stage, clutter.BIND_SIZE | clutter.BIND_POSITION, 0))
-#tr.add_constraint(clutter.BindConstraint(stage, clutter.BIND_SIZE, 0))
-
 stage.connect('destroy', clutter.main_quit)
 stage.set_user_resizable(True)
+
+gr = Graticule()
+stage.add(gr)
+
 stage.show_all()
 clutter.main()

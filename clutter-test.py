@@ -19,8 +19,6 @@ import clutter
 import gobject
 from clutter import cogl
 
-stage = clutter.Stage()
-
 
 class ClutterScope(clutter.Group):
 	"""A Clutter-powered digital storage oscilloscope."""
@@ -300,6 +298,7 @@ class Trace(clutter.Actor):
 		cogl.path_stroke()
 
 
+stage = clutter.Stage()
 stage.set_size(576, 576)
 stage.connect('destroy', clutter.main_quit)
 stage.set_user_resizable(True)

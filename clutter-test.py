@@ -20,10 +20,10 @@ class ClutterScope(clutter.Group):
 		self.graticule = Graticule()
 		self.add(self.graticule)
 		self.set_reactive(True)
-		self.__last_scroll_time = 0
 
 		self.traces = []
 
+		# Add some traces (just for looks)
 		tr = Trace()
 		tr.set_position(0, -50)
 		self.graticule.add(tr)
@@ -40,7 +40,15 @@ class ClutterScope(clutter.Group):
 		self.graticule.add(tr)
 		self.traces += [tr]
 
+		# State for event signal handlers
 		self.selected_trace = self.traces[0]
+		self.__last_scroll_time = 0
+		self.__drag_origin = None
+
+		# Hook up event signal handlers
+		self.connect_after('button-press-event', self.button_press)
+		self.connect_after('button-release-event', self.button_release)
+		self.connect_after('motion-event', self.motion)
 		self.connect_after('scroll-event', self.scroll)
 
 	def scroll(self, actor, event):
@@ -60,6 +68,19 @@ class ClutterScope(clutter.Group):
 				for trace in self.traces:
 					trace.set_scale_level_x(scale_level)
 			self.__last_scroll_time = time
+
+	def motion(self, actor, event):
+		if self.__drag_origin:
+			actor_origin, event_origin = self.__drag_origin
+			self.selected_trace.set_position(actor_origin[0] + event.x - event_origin[0], actor_origin[1] + event.y - event_origin[1])
+
+	def button_press(self, actor, event):
+		if event.get_button() == 1:
+			self.__drag_origin = (self.selected_trace.get_position(), (event.x, event.y))
+
+	def button_release(self, actor, event):
+		if event.get_button() == 1:
+			self.__drag_origin = None
 
 
 def hline(y, x1, x2):

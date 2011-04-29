@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+ClutterScope - Clutter-based software digitial storage oscilloscope
+Copyright (C) 2011  Leo Singer
+"""
+__author__ = "Leo Singer <leo.singer@ligo.org>"
+
 
 import math
 import numpy

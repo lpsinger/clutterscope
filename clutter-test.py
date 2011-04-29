@@ -292,6 +292,7 @@ class Trace(clutter.Actor):
 		cogl.set_source_color(self.color)
 		cogl.path_stroke()
 
+
 stage.set_size(576, 576)
 stage.connect('destroy', clutter.main_quit)
 stage.set_user_resizable(True)

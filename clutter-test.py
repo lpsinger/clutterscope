@@ -9,9 +9,57 @@ from clutter import cogl
 stage = clutter.Stage()
 
 
-class ClutterScope(clutter.Actor):
+class ClutterScope(clutter.Group):
 	"""A Clutter-powered digital storage oscilloscope."""
 	__gtype_name__ = 'ClutterScope'
+
+	SCROLL_TIMEOUT = 250
+
+	def __init__(self):
+		super(ClutterScope, self).__init__()
+		self.graticule = Graticule()
+		self.add(self.graticule)
+		self.set_reactive(True)
+		self.__last_scroll_time = 0
+
+		self.traces = []
+
+		tr = Trace()
+		tr.set_position(0, -50)
+		self.graticule.add(tr)
+		self.traces += [tr]
+
+		tr = Trace()
+		tr.set_color(clutter.color_from_string('magenta'))
+		self.graticule.add(tr)
+		self.traces += [tr]
+
+		tr = Trace()
+		tr.set_color(clutter.color_from_string('yellow'))
+		tr.set_position(0, 50)
+		self.graticule.add(tr)
+		self.traces += [tr]
+
+		self.selected_trace = self.traces[0]
+		self.connect_after('scroll-event', self.scroll)
+
+	def scroll(self, actor, event):
+		time = event.time
+		if time - self.__last_scroll_time > self.SCROLL_TIMEOUT:
+			direction = event.get_scroll_direction()
+			if direction == clutter.SCROLL_UP:
+				self.selected_trace.set_scale_level_y(self.selected_trace.get_scale_level_y() + 1)
+			elif direction == clutter.SCROLL_DOWN:
+				self.selected_trace.set_scale_level_y(self.selected_trace.get_scale_level_y() - 1)
+			elif direction == clutter.SCROLL_LEFT:
+				scale_level = self.selected_trace.get_scale_level_x() + 1
+				for trace in self.traces:
+					trace.set_scale_level_x(scale_level)
+			elif direction == clutter.SCROLL_RIGHT:
+				scale_level = self.selected_trace.get_scale_level_x() - 1
+				for trace in self.traces:
+					trace.set_scale_level_x(scale_level)
+			self.__last_scroll_time = time
 
 
 def hline(y, x1, x2):
@@ -126,6 +174,20 @@ class Trace(clutter.Actor):
 			'color',
 			'Trace stroke color',
 			gobject.PARAM_READWRITE
+		),
+		'scale-level-x': (
+			gobject.TYPE_INT,
+			'scale-level-x',
+			'Scale level, x-axis',
+			gobject.G_MININT, gobject.G_MAXINT, 0,
+			gobject.PARAM_READWRITE
+		),
+		'scale-level-y': (
+			gobject.TYPE_INT,
+			'scale-level-y',
+			'Scale level, y-axis',
+			gobject.G_MININT, gobject.G_MAXINT, 0,
+			gobject.PARAM_READWRITE
 		)
 	}
 
@@ -134,6 +196,8 @@ class Trace(clutter.Actor):
 		self.set_size(0, 0)
 		self.set_anchor_point_from_gravity(clutter.GRAVITY_CENTER)
 		self.color = clutter.color_from_string('cyan')
+		self.scale_level_x = 0
+		self.scale_level_y = 0
 
 	def do_set_property(self, prop, val):
 		if prop.name == 'color':
@@ -141,16 +205,46 @@ class Trace(clutter.Actor):
 			self.color = val
 			if old_color != self.color:
 				self.queue_redraw()
+		elif prop.name == 'scale-level-x':
+			self.scale_level_x = val
+			a, b = divmod(val, 2)
+			scale = 10 ** a
+			if b:
+				scale *= 2
+			self.animate(clutter.LINEAR, 100, 'scale-x', scale)
+		elif prop.name == 'scale-level-y':
+			self.scale_level_y = val
+			a, b = divmod(val, 2)
+			scale = 10 ** a
+			if b:
+				scale *= 2
+			self.animate(clutter.LINEAR, 100, 'scale-y', scale)
 
 	def do_get_property(self, prop):
 		if prop.name == 'color':
 			return self.color
+		elif prop.name == 'scale-level-x':
+			return self.scale_level_x
+		elif prop.name == 'scale-level-y':
+			return self.scale_level_y
 
-	def set_color(self, color):
-		self.set_property('color', color)
+	def set_color(self, val):
+		self.set_property('color', val)
 
 	def get_color(self):
-		return self.get_property(color)
+		return self.get_property()
+
+	def set_scale_level_x(self, val):
+		self.set_property('scale-level-x', val)
+
+	def get_scale_level_x(self):
+		return self.get_property('scale-level-x')
+
+	def set_scale_level_y(self, val):
+		self.set_property('scale-level-y', val)
+
+	def get_scale_level_y(self):
+		return self.get_property('scale-level-y')
 
 	def do_paint(self):
 		x = numpy.arange(-400, 400)
@@ -175,21 +269,9 @@ stage.set_size(576, 576)
 stage.connect('destroy', clutter.main_quit)
 stage.set_user_resizable(True)
 
-gr = Graticule()
-stage.add(gr)
-
-tr = Trace()
-tr.set_position(0, -50)
-gr.add(tr)
-
-tr = Trace()
-tr.set_color(clutter.color_from_string('magenta'))
-gr.add(tr)
-
-tr = Trace()
-tr.set_color(clutter.color_from_string('yellow'))
-tr.set_position(0, 50)
-gr.add(tr)
+scope = ClutterScope()
+stage.add(scope)
+scope.add_constraint(clutter.BindConstraint(stage, clutter.BIND_SIZE | clutter.BIND_POSITION, 0.))
 
 stage.show_all()
 clutter.main()

@@ -6,6 +6,13 @@ Copyright (C) 2011  Leo Singer
 __author__ = "Leo Singer <leo.singer@ligo.org>"
 
 
+# TODO: Add fade-in effect for graticule
+# TODO: Add labels for traces showing name, color, scale, etc.
+# TODO: Dragging to change trace offset should snap to horizontal or vertical
+# TODO: Add data API
+# TODO: Add triggering
+
+
 import math
 import numpy
 import clutter

@@ -20,6 +20,10 @@ import gobject
 from clutter import cogl
 
 
+# Disable font mipmapping (see <http://bugzilla.clutter-project.org/show_bug.cgi?id=2584>)
+clutter.set_font_flags(0)
+
+
 class ClutterScope(clutter.Group):
 	"""A Clutter-powered digital storage oscilloscope."""
 	__gtype_name__ = 'ClutterScope'
@@ -34,22 +38,39 @@ class ClutterScope(clutter.Group):
 
 		self.traces = []
 
+		layout = clutter.BoxLayout()
+		layout.set_vertical(False)
+		layout.set_use_animations(True)
+		layout.set_easing_duration(100)
+		layout.set_spacing(4)
+		label_box = clutter.Box(layout)
+		self.add(label_box)
+		label_box.set_position(0, 0)
+		#label_box.add_constraint(clutter.SnapConstraint(self, clutter.SNAP_EDGE_BOTTOM, clutter.SNAP_EDGE_BOTTOM, 0.))
+		label_box.add_constraint(clutter.BindConstraint(self, clutter.BIND_WIDTH, 0.))
+
 		# Add some traces (just for looks)
 		tr = Trace()
 		tr.set_position(0, -50)
 		self.graticule.add(tr)
 		self.traces += [tr]
+		label_box.add(TraceLabel(tr))
+		tr.set_name('H1:DMT-STRAIN')
 
 		tr = Trace()
 		tr.set_color(clutter.color_from_string('magenta'))
 		self.graticule.add(tr)
 		self.traces += [tr]
+		label_box.add(TraceLabel(tr))
+		tr.set_name('L1:DMT-STRAIN')
 
 		tr = Trace()
 		tr.set_color(clutter.color_from_string('yellow'))
 		tr.set_position(0, 50)
 		self.graticule.add(tr)
 		self.traces += [tr]
+		label_box.add(TraceLabel(tr))
+		tr.set_name('A1:DMT-STRAIN')
 
 		# State for event signal handlers
 		self.selected_trace = self.traces[0]
@@ -297,6 +318,45 @@ class Trace(clutter.Actor):
 		cogl.set_source_color(self.color)
 		cogl.path_stroke()
 
+
+class TraceLabel(clutter.Group):
+	"""Label for a trace showing its name, color, and scale."""
+	__gtype_name__ = 'TraceLabel'
+
+	def __init__(self, trace):
+		super(TraceLabel, self).__init__()
+		self.trace = trace
+		self.set_size(144, 48)
+		self.name_label = clutter.Text()
+		self.name_label.set_color(clutter.color_from_string('black'))
+		self.name_label.set_text('foo bar')
+		self.add(self.name_label)
+		self.name_label.set_position(6, 6)
+		self.name_label.set_size(*self.get_size())
+
+		self.trace.connect_after('notify::color', self.color_changed)
+		self.trace.connect_after('notify::name', self.name_changed)
+
+	def color_changed(self, param, user_data):
+		self.queue_redraw()
+
+	def name_changed(self, param, user_data):
+		self.name_label.set_text(self.trace.get_name())
+
+	def do_paint(self):
+		"""paint signal handler."""
+		w, h = self.get_size()
+		color = self.trace.color
+		dark_color = color.darken()
+
+		cogl.set_source_color(dark_color)
+		cogl.path_round_rectangle(0, 0, w, h, 5, 10)
+		cogl.path_fill()
+
+		cogl.set_source_color(color)
+		cogl.path_round_rectangle(3, 3, w - 3, h - 3, 3, 10)
+		cogl.path_fill()
+		clutter.Group.do_paint(self)
 
 stage = clutter.Stage()
 stage.set_size(576, 576)

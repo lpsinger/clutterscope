@@ -170,10 +170,6 @@ class animate(object):
 animate = animate()
 
 
-def ignore_last_arg(call):
-	return lambda *args: call(*args[:-1])
-
-
 class GroupNoLayout(Clutter.Group):
 	"""A Group that ignores its layout manager, so its size is not affected by
 	the allocations of its children."""
@@ -416,7 +412,7 @@ class TraceLabel(Clutter.Group):
 
 stage = Clutter.Stage.get_default()
 stage.set_size(576, 576)
-stage.connect('destroy', ignore_last_arg(Clutter.main_quit))
+stage.connect('destroy', lambda *args: Clutter.main_quit())
 stage.set_user_resizable(True)
 
 scope = ClutterScope()

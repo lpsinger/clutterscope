@@ -30,7 +30,6 @@ Clutter.set_font_flags(0)
 
 class ClutterScope(Clutter.Group):
 	"""A Clutter-powered digital storage oscilloscope."""
-	__gtype_name__ = 'ClutterScope'
 
 	SCROLL_TIMEOUT = 250
 
@@ -179,8 +178,6 @@ class GroupNoLayout(Clutter.Group):
 	"""A Group that ignores its layout manager, so its size is not affected by
 	the allocations of its children."""
 
-	__gtype_name__ = 'GroupNoLayout'
-
 	def __init__(self):
 		super(GroupNoLayout, self).__init__()
 
@@ -197,7 +194,6 @@ class Graticule(GroupNoLayout):
 	top to half its width above its bottom, so that it is possible to conveniently
 	parent objects to it and have their coordinates referenced from (0, 0) refer
 	to the center of the stage."""
-	__gtype_name__ = 'Graticule'
 
 	"""Pixels between major gridlines"""
 	MAJOR_PIXELS = 60
@@ -277,7 +273,6 @@ class Graticule(GroupNoLayout):
 
 
 class Trace(Clutter.Actor):
-	__gtype_name__ = 'Trace'
 
 	__gproperties__ = {
 		'color': (
@@ -382,7 +377,6 @@ class Trace(Clutter.Actor):
 
 class TraceLabel(Clutter.Group):
 	"""Label for a trace showing its name, color, and scale."""
-	__gtype_name__ = 'TraceLabel'
 
 	def __init__(self, trace):
 		super(TraceLabel, self).__init__()

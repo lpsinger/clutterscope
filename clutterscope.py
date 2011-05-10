@@ -295,8 +295,6 @@ class Trace(Clutter.Actor):
 
 	def __init__(self):
 		super(Trace, self).__init__()
-		#self.set_size(0, 0)
-		#self.set_fixed_position_set(True)
 		self.set_anchor_point_from_gravity(Clutter.Gravity.CENTER)
 		self.color = color_from_string('cyan')
 		self.scale_level_x = 0

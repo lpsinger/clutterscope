@@ -20,12 +20,62 @@ import gobject
 from gi.repository import Clutter, Cogl
 
 
-# Initialize Clutter
-Clutter.init(sys.argv)
+def hline(y, x1, x2):
+	"""Draw a horizontal line from (x1, y) to (x2, y)."""
+	Cogl.path_line(x1, y, x2, y)
 
 
-# Disable font mipmapping (see <http://bugzilla.clutter-project.org/show_bug.cgi?id=2584>)
-Clutter.set_font_flags(0)
+def vline(x, y1, y2):
+	"""Draw a vertical line from (x, y1) to (x, y2)."""
+	Cogl.path_line(x, y1, x, y2)
+
+
+def color_from_string(str):
+	"""Return a new instance of Clutter.Color initialized with a string."""
+	color = Clutter.Color()
+	if not color.from_string(str):
+		raise RuntimeError
+	return color
+
+
+def cogl_color_from_clutter_color(c):
+	"""Return a Cogl.Color that is equivalent to a Clutter.Color."""
+	cogl_color = Cogl.Color()
+	cogl_color.init_from_4ub(c.red, c.green, c.blue, c.alpha)
+	return cogl_color
+
+
+class animate(object):
+	"""Replacement for implicit animation functions, which don't yet work with
+	gobject-introspection."""
+	def __init__(self):
+		self.__objs = {}
+
+	def __destroy(self, actor, user_data):
+		del self.__objs[actor]
+
+	def __call__(self, actor, mode, duration, **kwargs):
+		try:
+			animations = self.__objs[actor]
+		except KeyError:
+			animations = {}
+			self.__objs[actor] = animations
+			actor.connect('destroy', self.__destroy)
+
+		for key, value in kwargs.iteritems():
+			key = key.replace('_', '-')
+
+			try:
+				animation = animations[key]
+				animation.unbind_property(key)
+			except KeyError:
+				animation = Clutter.Animation()
+				animation.set_object(actor)
+				animations[key] = animation
+			animation.set_duration(duration)
+			animation.bind(key, value)
+			animation.get_timeline().start()
+animate = animate()
 
 
 class ClutterScope(Clutter.Group):
@@ -112,62 +162,6 @@ class ClutterScope(Clutter.Group):
 	def do_button_release_event(self, event):
 		if event.button == 1:
 			self.__drag_origin = None
-
-
-def hline(y, x1, x2):
-	"""Draw a horizontal line from (x1, y) to (x2, y)."""
-	Cogl.path_line(x1, y, x2, y)
-
-
-def vline(x, y1, y2):
-	"""Draw a vertical line from (x, y1) to (x, y2)."""
-	Cogl.path_line(x, y1, x, y2)
-
-
-def color_from_string(str):
-	"""Return a new instance of Clutter.Color initialized with a string."""
-	color = Clutter.Color()
-	if not color.from_string(str):
-		raise RuntimeError
-	return color
-
-
-def cogl_color_from_clutter_color(c):
-	"""Return a Cogl.Color that is equivalent to a Clutter.Color."""
-	cogl_color = Cogl.Color()
-	cogl_color.init_from_4ub(c.red, c.green, c.blue, c.alpha)
-	return cogl_color
-
-
-class animate(object):
-	def __init__(self):
-		self.__objs = {}
-
-	def __destroy(self, actor, user_data):
-		del self.__objs[actor]
-
-	def __call__(self, actor, mode, duration, **kwargs):
-		try:
-			animations = self.__objs[actor]
-		except KeyError:
-			animations = {}
-			self.__objs[actor] = animations
-			actor.connect('destroy', self.__destroy)
-
-		for key, value in kwargs.iteritems():
-			key = key.replace('_', '-')
-
-			try:
-				animation = animations[key]
-				animation.unbind_property(key)
-			except KeyError:
-				animation = Clutter.Animation()
-				animation.set_object(actor)
-				animations[key] = animation
-			animation.set_duration(duration)
-			animation.bind(key, value)
-			animation.get_timeline().start()
-animate = animate()
 
 
 class GroupNoLayout(Clutter.Group):
@@ -408,10 +402,17 @@ class TraceLabel(Clutter.Group):
 		Cogl.path_fill()
 
 
+# Initialize Clutter
+Clutter.init(sys.argv)
+
+# Disable font mipmapping (see <http://bugzilla.clutter-project.org/show_bug.cgi?id=2584>)
+Clutter.set_font_flags(0)
+
+# Set up stage.
 stage = Clutter.Stage.get_default()
 stage.set_size(576, 576)
-stage.connect('destroy', lambda *args: Clutter.main_quit())
 stage.set_user_resizable(True)
+stage.connect('destroy', lambda *args: Clutter.main_quit())
 
 scope = ClutterScope()
 stage.add_actor(scope)
@@ -421,5 +422,8 @@ constraint.set_coordinate(Clutter.BindCoordinate.SIZE | Clutter.BindCoordinate.P
 constraint.set_source(stage)
 scope.add_constraint(constraint)
 
+# Show everything.
 stage.show_all()
+
+# Start main loop.
 Clutter.main()
